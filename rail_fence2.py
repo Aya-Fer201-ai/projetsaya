@@ -1,31 +1,28 @@
-import tkinter as tk
-from tkinter import messagebox
+import streamlit as st
 
+# Fonction pour chiffrer avec le Rail Fence Cipher
 def rail_fence_encrypt(plaintext, k):
-    # Créer un tableau pour contenir les caractères pour chaque rail
     rails = [''] * k
     direction = 1  # 1 signifie descendre, -1 signifie remonter
     rail_index = 0
 
     for char in plaintext:
-        rails[rail_index] += char  # Placer le caractère dans le rail courant
-        # Changer de direction si on atteint le haut ou le bas du rail
+        rails[rail_index] += char
         if rail_index == 0:
             direction = 1
         elif rail_index == k - 1:
             direction = -1
-        rail_index += direction  # Passer au rail suivant
+        rail_index += direction
 
-    # Joindre tous les rails pour obtenir le message chiffré final
     return ''.join(rails)
 
+# Fonction pour déchiffrer avec le Rail Fence Cipher
 def rail_fence_decrypt(ciphertext, k):
     rails = [''] * k
     direction = 1
     rail_index = 0
     rail_lengths = [0] * k
 
-    # Première passe : déterminer combien de caractères vont dans chaque rail
     for char in ciphertext:
         rail_lengths[rail_index] += 1
         if rail_index == 0:
@@ -44,9 +41,8 @@ def rail_fence_decrypt(ciphertext, k):
     direction = 1
 
     for _ in range(len(ciphertext)):
-        result.append(rails[rail_index][0])  # Prendre un caractère du rail courant
-        rails[rail_index] = rails[rail_index][1:]  # Retirer ce caractère du rail
-        
+        result.append(rails[rail_index][0])
+        rails[rail_index] = rails[rail_index][1:]
         if rail_index == 0:
             direction = 1
         elif rail_index == k - 1:
@@ -55,58 +51,28 @@ def rail_fence_decrypt(ciphertext, k):
 
     return ''.join(result)
 
-def encrypt_text():
-    plaintext = entry_text.get()
-    try:
-        k = int(entry_k.get())
-        if k < 2:
-            raise ValueError("k doit être >= 2")
-        
-        ciphertext = rail_fence_encrypt(plaintext.replace(" ", "").upper(), k)
-        result_var.set(f"Texte chiffré : {ciphertext}")
-        
-    except ValueError as e:
-        messagebox.showerror("Erreur", str(e))
+# Interface Streamlit
+st.title("Chiffrement Rail Fence")
 
-def decrypt_text():
-    ciphertext = entry_text.get()
-    try:
-        k = int(entry_k.get())
-        if k < 2:
-            raise ValueError("k doit être >= 2")
-        
-        decrypted_text = rail_fence_decrypt(ciphertext, k)
-        result_var.set(f"Texte déchiffré : {decrypted_text}")
-        
-    except ValueError as e:
-        messagebox.showerror("Erreur", str(e))
+# Entrée du nombre de niveaux (k)
+k = st.number_input("Entrez le nombre de niveaux (k >= 2) :", min_value=2, value=2, step=1)
 
-# Création de la fenêtre principale
-root = tk.Tk()
-root.title("Chiffre Rail Fence")
+# Texte d'entrée
+text = st.text_input("Entrez le texte :")
 
-# Création des éléments de l'interface graphique
-label_k = tk.Label(root, text="Entrez le nombre de niveaux (k >= 2) :")
-label_k.pack()
+# Choix entre chiffrer ou déchiffrer
+action = st.radio("Action :", ["Chiffrer", "Déchiffrer"])
 
-entry_k = tk.Entry(root)
-entry_k.pack()
-
-label_text = tk.Label(root, text="Entrez le texte :")
-label_text.pack()
-
-entry_text = tk.Entry(root)
-entry_text.pack()
-
-button_encrypt = tk.Button(root, text="Chiffrer", command=encrypt_text)
-button_encrypt.pack()
-
-button_decrypt = tk.Button(root, text="Déchiffrer", command=decrypt_text)
-button_decrypt.pack()
-
-result_var = tk.StringVar()
-result_label = tk.Label(root, textvariable=result_var)
-result_label.pack()
-
-# Lancer la boucle principale de l'interface graphique
-root.mainloop()
+if st.button("Exécuter"):
+    if action == "Chiffrer":
+        if text:
+            ciphertext = rail_fence_encrypt(text.replace(" ", "").upper(), k)
+            st.success(f"Texte chiffré : {ciphertext}")
+        else:
+            st.error("Veuillez entrer un texte à chiffrer.")
+    elif action == "Déchiffrer":
+        if text:
+            decrypted_text = rail_fence_decrypt(text, k)
+            st.success(f"Texte déchiffré : {decrypted_text}")
+        else:
+            st.error("Veuillez entrer un texte à déchiffrer.")
