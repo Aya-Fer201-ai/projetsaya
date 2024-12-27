@@ -115,6 +115,6 @@ def main():
     print(decrypted_text)
 
 # Exécuter la fonction principale
-if _name_ == "_main_":
+if __name__ == "_main_":
     main()
 
