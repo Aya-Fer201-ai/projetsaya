@@ -1,3 +1,4 @@
+import streamlit as st
 import numpy as np
 from collections import Counter
 
@@ -74,47 +75,40 @@ def estimer_cle_freq(text, key_len):
         key += chr(shift + ord('A'))
     return key
 
-# Fonction principale
+# Interface Streamlit
 def main():
-    # Demander à l'utilisateur d'entrer le texte à chiffrer et la clé
-    plaintext = input("Veuillez entrer le texte à chiffrer : ").upper()
-    key = input("Veuillez entrer la clé : ").upper()
+    st.title("Cryptanalyse du chiffre de Vigenère")
 
-    # Retirer les espaces et les caractères non alphabétiques du texte clair
-    plaintext = ''.join(filter(str.isalpha, plaintext))
+    # Demander à l'utilisateur de saisir le texte à chiffrer et la clé
+    plaintext = st.text_input("Veuillez entrer le texte à chiffrer :").upper()
+    key = st.text_input("Veuillez entrer la clé :").upper()
 
-    # Chiffrer le texte
-    ciphertext = chiffrer_vigenere(plaintext, key)
-    print(f"Texte chiffré : {ciphertext}")
+    # Chiffrer le texte si le texte et la clé sont fournis
+    if plaintext and key:
+        plaintext = ''.join(filter(str.isalpha, plaintext))  # Retirer les caractères non alphabétiques
+        ciphertext = chiffrer_vigenere(plaintext, key)
+        st.write(f"Texte chiffré : {ciphertext}")
 
-    # Retirer les espaces et les caractères non alphabétiques du texte chiffré
-    ciphertext = ''.join(filter(str.isalpha, ciphertext))
+        # Demander à l'utilisateur de choisir une méthode de déchiffrement
+        st.subheader("Choisissez une méthode pour déchiffrer le texte :")
+        choix = st.radio("Méthodes", ["Estimation de la clé avec analyse fréquentielle", "Analyse avec l'indice de coïncidence"])
 
-    # Demander à l'utilisateur de choisir la méthode de déchiffrement
-    print("Choisissez une méthode pour déchiffrer :")
-    print("1. Estimation de la clé avec analyse fréquentielle")
-    print("2. Analyse avec l'indice de coïncidence")
-    choix = input("Entrez 1 ou 2 : ")
+        # Analyser la longueur de la clé probable
+        key_len = longueur_cle_probable(ciphertext)
+        st.write(f"Longueur estimée de la clé : {key_len}")
 
-    # Déterminer la longueur de la clé probable
-    key_len = longueur_cle_probable(ciphertext)
-    print(f"Longueur estimée de la clé : {key_len}")
+        # Estimer la clé et déchiffrer le texte selon la méthode choisie
+        if choix == "Estimation de la clé avec analyse fréquentielle":
+            key_estimee = estimer_cle(ciphertext, key_len)
+        elif choix == "Analyse avec l'indice de coïncidence":
+            key_estimee = estimer_cle_freq(ciphertext, key_len)
 
-    # Estimer la clé et déchiffrer le texte
-    if choix == '1':
-        key_estimee = estimer_cle(ciphertext, key_len)
-    elif choix == '2':
-        key_estimee = estimer_cle_freq(ciphertext, key_len)
-    else:
-        print("Choix invalide.")
-        return
+        st.write(f"Clé estimée : {key_estimee}")
 
-    print(f"Clé estimée : {key_estimee}")
-    decrypted_text = dechiffrer_vigenere(ciphertext, key_estimee)
-    print("Texte déchiffré :")
-    print(decrypted_text)
+        # Déchiffrer le texte avec la clé estimée
+        decrypted_text = dechiffrer_vigenere(ciphertext, key_estimee)
+        st.subheader("Texte déchiffré :")
+        st.write(decrypted_text)
 
-# Exécuter la fonction principale
-if __name__ == "_main_":
+if __name__ == "__main__":
     main()
-
