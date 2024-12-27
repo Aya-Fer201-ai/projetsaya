@@ -80,7 +80,7 @@ def main():
     st.title("Cryptanalyse du chiffre de Vigenère")
 
     # Demander à l'utilisateur de saisir le texte à chiffrer et la clé
-    plaintext = st.text_input("Veuillez entrer le texte à chiffrer :").upper()
+    plaintext = st.text_input("Veuillez entrer le texte à chiffrer(le message doit dépasser 200 caractères) :").upper()
     key = st.text_input("Veuillez entrer la clé :").upper()
 
     # Chiffrer le texte si le texte et la clé sont fournis
