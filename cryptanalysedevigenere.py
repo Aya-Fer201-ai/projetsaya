@@ -1,6 +1,5 @@
 import numpy as np
 from collections import Counter
-import streamlit as st
 
 # Fonction pour calculer l'indice de coïncidence
 def indice_coincidence(text):
@@ -21,6 +20,20 @@ def longueur_cle_probable(text, max_len=20):
         else:
             ICs.append(np.mean([indice_coincidence(segment) for segment in segments]))
     return ICs.index(max(ICs)) + 1 if ICs else 1
+
+# Fonction pour chiffrer le texte en utilisant le chiffre de Vigenère
+def chiffrer_vigenere(text, key):
+    key = key.upper()
+    encrypted = []
+    key_len = len(key)
+    for i, char in enumerate(text):
+        if char.isalpha():
+            shift = ord(key[i % key_len]) - ord('A')
+            encrypted_char = chr((ord(char) + shift - ord('A')) % 26 + ord('A'))
+            encrypted.append(encrypted_char)
+        else:
+            encrypted.append(char)
+    return ''.join(encrypted)
 
 # Fonction pour déchiffrer le texte chiffré en utilisant la clé estimée
 def dechiffrer_vigenere(text, key):
@@ -50,37 +63,58 @@ def estimer_cle(text, key_len):
             key += chr(shift + ord('A'))
     return key
 
-# Interface utilisateur avec Streamlit
+# Fonction pour estimer la clé en utilisant l'analyse de fréquence par sous-texte
+def estimer_cle_freq(text, key_len):
+    key = ""
+    for i in range(key_len):
+        subtext = text[i::key_len]
+        freq = Counter(subtext)
+        most_common = freq.most_common(1)[0][0]
+        shift = (ord(most_common) - ord('E')) % 26
+        key += chr(shift + ord('A'))
+    return key
+
+# Fonction principale
 def main():
-    st.title("Décryptage du Chiffre de Vigenère")
-    st.write("Ce programme permet de décrypter un texte chiffré avec le chiffre de Vigenère à l'aide de méthodes analytiques.")
+    # Demander à l'utilisateur d'entrer le texte à chiffrer et la clé
+    plaintext = input("Veuillez entrer le texte à chiffrer : ").upper()
+    key = input("Veuillez entrer la clé : ").upper()
 
-    # Entrée de l'utilisateur
-    ciphertext = st.text_area("Entrez le texte chiffré :").upper()
-    if not ciphertext:
-        st.warning("Veuillez entrer un texte chiffré pour continuer.")
-        return
+    # Retirer les espaces et les caractères non alphabétiques du texte clair
+    plaintext = ''.join(filter(str.isalpha, plaintext))
 
-    # Supprimer les caractères non alphabétiques
+    # Chiffrer le texte
+    ciphertext = chiffrer_vigenere(plaintext, key)
+    print(f"Texte chiffré : {ciphertext}")
+
+    # Retirer les espaces et les caractères non alphabétiques du texte chiffré
     ciphertext = ''.join(filter(str.isalpha, ciphertext))
 
-    # Analyse avec l'indice de coïncidence
-    st.subheader("Analyse automatique avec l'indice de coïncidence")
-    max_len = st.slider("Longueur maximale de la clé à tester :", 1, 50, 20)
-    key_len = longueur_cle_probable(ciphertext, max_len)
-    st.write(f"Longueur estimée de la clé : {key_len}")
+    # Demander à l'utilisateur de choisir la méthode de déchiffrement
+    print("Choisissez une méthode pour déchiffrer :")
+    print("1. Estimation de la clé avec analyse fréquentielle")
+    print("2. Analyse avec l'indice de coïncidence")
+    choix = input("Entrez 1 ou 2 : ")
 
-    # Estimation de la clé
-    key = estimer_cle(ciphertext, key_len)
-    st.write(f"Clé estimée : {key}")
+    # Déterminer la longueur de la clé probable
+    key_len = longueur_cle_probable(ciphertext)
+    print(f"Longueur estimée de la clé : {key_len}")
 
-    # Décryptage du texte
-    decrypted_text = dechiffrer_vigenere(ciphertext, key)
-    st.subheader("Résultat du décryptage")
-    st.write(decrypted_text)
+    # Estimer la clé et déchiffrer le texte
+    if choix == '1':
+        key_estimee = estimer_cle(ciphertext, key_len)
+    elif choix == '2':
+        key_estimee = estimer_cle_freq(ciphertext, key_len)
+    else:
+        print("Choix invalide.")
+        return
 
-# Exécution de l'application
-if __name__ == "__main__":
+    print(f"Clé estimée : {key_estimee}")
+    decrypted_text = dechiffrer_vigenere(ciphertext, key_estimee)
+    print("Texte déchiffré :")
+    print(decrypted_text)
+
+# Exécuter la fonction principale
+if _name_ == "_main_":
     main()
-
 
