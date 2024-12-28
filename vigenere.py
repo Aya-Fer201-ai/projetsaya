@@ -1,63 +1,104 @@
 import streamlit as st
+import numpy as np
 from collections import Counter
 
-# --- FONCTIONS DE CHIFFREMENT ET DECHIFFREMENT ---
-def vigenere_encrypt(plaintext, key):
-    plaintext = plaintext.upper().replace(" ", "")
+# Fonction pour calculer l'indice de coïncidence
+def indice_coincidence(text):
+    n = len(text)
+    if n <= 1:
+        return 0
+    freq = Counter(text)
+    IC = sum(f * (f - 1) for f in freq.values()) / (n * (n - 1))
+    return IC
+
+# Fonction pour trouver la longueur probable de la clé
+def longueur_cle_probable(text, max_len=20):
+    ICs = []
+    for k in range(1, max_len + 1):
+        segments = [text[i::k] for i in range(k)]
+        if any(len(segment) <= 1 for segment in segments):
+            ICs.append(0)
+        else:
+            ICs.append(np.mean([indice_coincidence(segment) for segment in segments]))
+    return ICs.index(max(ICs)) + 1 if ICs else 1
+
+# Fonction pour chiffrer le texte en utilisant le chiffre de Vigenère
+def chiffrer_vigenere(text, key):
     key = key.upper()
-    key_repeated = (key * (len(plaintext) // len(key) + 1))[:len(plaintext)]
-    ciphertext = ""
-    for p, k in zip(plaintext, key_repeated):
-        ciphertext += chr(((ord(p) - 65) + (ord(k) - 65)) % 26 + 65)
-    return ciphertext
+    encrypted = []
+    key_len = len(key)
+    for i, char in enumerate(text):
+        if char.isalpha():
+            shift = ord(key[i % key_len]) - ord('A')
+            encrypted_char = chr((ord(char) + shift - ord('A')) % 26 + ord('A'))
+            encrypted.append(encrypted_char)
+        else:
+            encrypted.append(char)
+    return ''.join(encrypted)
 
-def vigenere_decrypt(ciphertext, key):
+# Fonction pour déchiffrer le texte chiffré en utilisant la clé estimée
+def dechiffrer_vigenere(text, key):
     key = key.upper()
-    key_repeated = (key * (len(ciphertext) // len(key) + 1))[:len(ciphertext)]
-    plaintext = ""
-    for c, k in zip(ciphertext, key_repeated):
-        plaintext += chr(((ord(c) - 65) - (ord(k) - 65)) % 26 + 65)
-    return plaintext
+    decrypted = []
+    key_len = len(key)
+    for i, char in enumerate(text):
+        if char.isalpha():
+            shift = ord(key[i % key_len]) - ord('A')
+            decrypted_char = chr((ord(char) - shift - ord('A')) % 26 + ord('A'))
+            decrypted.append(decrypted_char)
+        else:
+            decrypted.append(char)
+    return ''.join(decrypted)
 
-# --- ANALYSE DE FRÉQUENCE ---
-def frequency_analysis(text):
-    text = text.upper()
-    counter = Counter(text)
-    total = sum(counter.values())
-    freq = {char: round(count / total, 3) for char, count in counter.items() if char.isalpha()}
-    return freq
+# Fonction pour estimer la clé en utilisant l'analyse fréquentielle
+def estimer_cle(text, key_len):
+    subtexts = [''.join(text[i::key_len]) for i in range(key_len)]
+    key = ''
+    for subtext in subtexts:
+        if not subtext:
+            key += 'A'  # Par défaut, ajouter 'A' si le segment est vide
+        else:
+            freq = Counter(subtext)
+            most_common = freq.most_common(1)[0][0]
+            shift = (ord(most_common) - ord('E')) % 26
+            key += chr(shift + ord('A'))
+    return key
 
-# --- INTERFACE STREAMLIT ---
-st.title("Chiffrement de Vigenère & Analyse de Fréquence")
+# Interface Streamlit
+def main():
+    st.title("Chiffre et Déchiffrement par Vigenère")
 
-# Input de l'utilisateur
-option = st.sidebar.selectbox("Choisissez une action :", ["Chiffrement", "Déchiffrement", "Analyse de fréquence"])
+    # Entrée du texte à chiffrer et de la clé
+    plaintext = st.text_area("Veuillez entrer le texte à chiffrer :").upper()
+    key = st.text_input("Veuillez entrer la clé :").upper()
 
-if option == "Chiffrement":
-    st.header("Chiffrement de Vigenère")
-    plaintext = st.text_input("Entrez le texte à chiffrer :", "")
-    key = st.text_input("Entrez la clé :", "")
-    if plaintext and key:
-        ciphertext = vigenere_encrypt(plaintext, key)
-        st.write(f"Texte chiffré : `{ciphertext}`")
+    if st.button("Chiffrer"):
+        # Retirer les espaces et les caractères non alphabétiques du texte clair
+        plaintext_cleaned = ''.join(filter(str.isalpha, plaintext))
+        
+        # Chiffrer le texte
+        ciphertext = chiffrer_vigenere(plaintext_cleaned, key)
+        st.write(f"Texte chiffré : {ciphertext}")
 
-elif option == "Déchiffrement":
-    st.header("Déchiffrement de Vigenère")
-    ciphertext = st.text_input("Entrez le texte chiffré :", "")
-    key = st.text_input("Entrez la clé :", "")
-    if ciphertext and key:
-        plaintext = vigenere_decrypt(ciphertext, key)
-        st.write(f"Texte déchiffré : `{plaintext}`")
+        # Demander à l'utilisateur de choisir la méthode de déchiffrement
+        choix = st.radio("Choisissez une méthode pour déchiffrer :", ("Estimation de la clé avec analyse fréquentielle", "Analyse avec l'indice de coïncidence"))
 
-elif option == "Analyse de fréquence":
-    st.header("Analyse de fréquence")
-    text = st.text_area("Entrez le texte à analyser :", "")
-    if text:
-        freq = frequency_analysis(text)
-        st.write("Fréquence des lettres dans le texte :")
-        st.bar_chart(freq)
+        # Déterminer la longueur de la clé probable
+        key_len = longueur_cle_probable(ciphertext)
+        st.write(f"Longueur estimée de la clé : {key_len}")
 
+        # Estimer la clé et déchiffrer le texte
+        if choix == "Estimation de la clé avec analyse fréquentielle":
+            key_estimee = estimer_cle(ciphertext, key_len)
+        else:
+            # Implémentation d'une méthode alternative si nécessaire (ici on utilise la même pour simplifier)
+            key_estimee = estimer_cle(ciphertext, key_len)
 
+        st.write(f"Clé estimée : {key_estimee}")
+        
+        decrypted_text = dechiffrer_vigenere(ciphertext, key_estimee)
+        st.write("Texte déchiffré :")
+        st.write(decrypted_text)
 
-
-
+if __name__ == "__main__":
+    main()
