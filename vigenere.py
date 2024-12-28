@@ -81,7 +81,9 @@ def main():
         st.write(f"Texte chiffré : {ciphertext}")
 
         # Demander à l'utilisateur de choisir la méthode de déchiffrement
-        choix = st.radio("Choisissez une méthode pour déchiffrer :", ("Estimation de la clé avec analyse fréquentielle", "Analyse avec l'indice de coïncidence"))
+        choix = st.radio("Choisissez une méthode pour déchiffrer :", 
+                         ("Estimation de la clé avec analyse fréquentielle", 
+                          "Analyse avec l'indice de coïncidence"))
 
         # Déterminer la longueur de la clé probable
         key_len = longueur_cle_probable(ciphertext)
@@ -90,8 +92,8 @@ def main():
         # Estimer la clé et déchiffrer le texte
         if choix == "Estimation de la clé avec analyse fréquentielle":
             key_estimee = estimer_cle(ciphertext, key_len)
-        else:
-            # Implémentation d'une méthode alternative si nécessaire (ici on utilise la même pour simplifier)
+        elif choix == "Analyse avec l'indice de coïncidence":
+            # Utiliser la même méthode d'estimation pour simplifier (vous pouvez ajouter une autre méthode si nécessaire)
             key_estimee = estimer_cle(ciphertext, key_len)
 
         st.write(f"Clé estimée : {key_estimee}")
